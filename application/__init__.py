@@ -2,13 +2,13 @@ from flask import Flask
 
 from . import models
 from . import urls
-from . import views
 
 
 def create_app(path: str) -> Flask:
     """- создать фабрику flask"""
     app = Flask(__name__)
     register_config(app, path)
+    urls.register_urls(app)
 
     with app.app_context():
         # запускаем контекст объекта,
