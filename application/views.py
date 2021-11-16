@@ -13,6 +13,7 @@ class ViewIndex(Resource):
     def post(self):
         ...
 
+
 class ViewGame(Resource):
 
     def get(self):
