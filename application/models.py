@@ -5,19 +5,22 @@ from sqlalchemy import Column, String, Integer
 db = SQLAlchemy()
 
 
-class BookModel(db.Model):
+class UserModel(db.Model):
+    """- пользователи"""
 
-    __tablename__ = 'books'
+    __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(80))
-    price = Column(Integer())
-    author = Column(String(80))
+    username = Column(String(120), unique=True, nullable=False)
+    password = Column(String(120), nullable=False)
 
-    def __init__(self, name, price, author):
-        self.name = name
-        self.price = price
-        self.author = author
+    def save(self):
+        """- сохранить в базу"""
+        db.session.add(self)
+        db.session.commit()
 
-    def json(self):
-        return {"name": self.name, "price": self.price, "author": self.author}
+    @classmethod
+    def find_by_username(cls, user_name):
+        """- найти пользователя по имени"""
+        return cls.query.filter_by(user_name=user_name).first()
+

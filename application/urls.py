@@ -1,20 +1,24 @@
-from flask_restful import Api
+from flask import Flask
 
 from . import views
 
 
-def register_urls(api: Api):
+def register_urls(app: Flask):
     """- регистрируем наши urls, адреса"""
 
     # главная страница
-    api.add_resource(
-        views.ViewIndex,
-        '/',
+    app.add_url_rule(
+        rule='/',
+        # endpoint="index",
+        # methods=['GET', 'POST'],
+        view_func=views.IndexView.as_view("index"),
     )
 
     # страница с игрой
-    api.add_resource(
-        views.ViewGame,
-        '/game',
+    app.add_url_rule(
+        rule='/user',
+        # endpoint="game",
+        # methods=['GET', 'POST'],
+        view_func=views.UserView.as_view("game"),
     )
 

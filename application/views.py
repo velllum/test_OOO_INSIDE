@@ -1,20 +1,26 @@
-from flask_restful import Resource, Api
+import copy
 
-from . import models
+from flask import (
+    current_app as app,
+    request,
+    redirect,
+    url_for,
+    views, make_response, jsonify,
+)
 
-api = Api()
 
-
-class ViewIndex(Resource):
+class IndexView(views.MethodView):
+    """- главная страница"""
 
     def get(self):
-        return {'message': '{} row(s) deleted'}
+        return make_response(jsonify({"massage": "okey"}), 200)
 
     def post(self):
         ...
 
 
-class ViewGame(Resource):
+class UserView(views.MethodView):
+    """- пользователь"""
 
     def get(self):
         ...
