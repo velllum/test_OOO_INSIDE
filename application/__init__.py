@@ -4,20 +4,20 @@ from flask_jwt_extended import JWTManager
 from . import models
 from . import urls
 from . import fakes
+from . import views
 
 
 
 def create_app(path: str) -> Flask:
     """- создать фабрику flask"""
     app = Flask(__name__)
-    jwt = JWTManager()
 
     register_config(app, path)
-    jwt.init_app(app)
     urls.register_urls(app)
 
     # запускаем контекст объекта
     with app.app_context():
+        views.jwt.init_app(app)
         register_db(app)
 
         return app

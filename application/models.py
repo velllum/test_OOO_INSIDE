@@ -1,3 +1,4 @@
+from flask_jwt_extended import create_access_token
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
@@ -45,6 +46,22 @@ class Users(Base):
     def find_by_username(cls, user_name: str) -> str:
         """- найти пользователя по имени"""
         return cls.query.filter_by(name=user_name).first()
+
+
+    # def get_token(self, expire_time=24):
+    #     expire_delta = timedelta(expire_time)
+    #     token = create_access_token(
+    #         identity=self.id, expires_delta=expire_delta)
+    #     return token
+    #
+    #
+    # @classmethod
+    # def authenticate(cls, email, password):
+    #     user = cls.query.filter(cls.email == email).one()
+    #     if not bcrypt.verify(password, user.password):
+    #         raise Exception('No user with this password')
+    #     return user
+
 
 
 class Messages(Base):
