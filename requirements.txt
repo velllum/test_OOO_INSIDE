@@ -3,3 +3,4 @@ flask-sqlalchemy
 Flask-JWT-Extended
 SQLAlchemy~=1.4.27
 Werkzeug~=2.0.2
+pytest
