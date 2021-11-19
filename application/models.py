@@ -1,7 +1,3 @@
-from typing import Any
-
-from flask import request_started
-from flask_jwt_extended import create_access_token
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
@@ -22,6 +18,11 @@ class Base(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    @classmethod
+    def find_by_username(cls, user_name: str) -> db.Model:
+        """- найти пользователя по имени"""
+        return cls.query.filter_by(name=user_name).first()
+
 
 class Users(Base):
     """- пользователи"""
@@ -37,41 +38,14 @@ class Users(Base):
         self.password = self.create_pass(password)
 
     @classmethod
-    def convert_to_str(cls, password: str) -> str:
-        """- проверка на строковый тип"""
-        if not isinstance(password, str):
-            password = str(password)
-        return password
-
-    @classmethod
     def create_pass(cls, password: str) -> str:
         """- создать пароль"""
-        pd = cls.convert_to_str(password)
-        return generate_password_hash(pd)
+        return generate_password_hash(password)
 
-    def is_pass(self, password: Any) -> bool:
+    def is_password(self, password: str) -> bool:
         """- проверка пароля на совпадение"""
-        pd = Users.convert_to_str(password)
-        return check_password_hash(str(self.password), pd)
+        return check_password_hash(str(self.password), password)
 
-    @classmethod
-    def find_by_username(cls, user_name: str) -> str:
-        """- найти пользователя по имени"""
-        return cls.query.filter_by(name=user_name).first()
-
-    # def get_token(self, expire_time=24):
-    #     expire_delta = timedelta(expire_time)
-    #     token = create_access_token(
-    #         identity=self.id, expires_delta=expire_delta)
-    #     return token
-    #
-    #
-    # @classmethod
-    # def authenticate(cls, email, password):
-    #     user = cls.query.filter(cls.email == email).one()
-    #     if not bcrypt.verify(password, user.password):
-    #         raise Exception('No user with this password')
-    #     return user
 
 class Messages(Base):
     """- авторы"""

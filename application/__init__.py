@@ -2,22 +2,22 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 
 from . import models
-# from . import urls
 from . import fakes
 
 
 
 def create_app(path: str) -> Flask:
-    """- создать фабрику flask"""
+    """- фабрику, инициализируем приложение"""
     app = Flask(__name__)
     jwt = JWTManager()
     register_config(app, path)
-    # urls.register_urls(app)
 
     # запускаем контекст объекта
     with app.app_context():
         jwt.init_app(app)
         register_db(app)
+        register_urls(app)
+
         from . import views
 
         return app
@@ -37,3 +37,8 @@ def register_db(app: Flask):
     # проверяем была ли создана база данных,
     # если нет то создаем и наполняем временными данными
     fakes.database_is_empty()
+
+def register_urls(app: Flask):
+    """- регистрация url маршрутов"""
+    from . import urls
+    urls.init_urls(app)

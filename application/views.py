@@ -1,177 +1,143 @@
-from typing import Dict
+from typing import Dict, Any, List
 
-import flask
-from flask import (
-    current_app as app,
-    request,
-    url_for,
-    views, make_response, jsonify, session, request_started,
-)
+from flask import request, views, jsonify
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 
-from . import models
+from .models import Users, Messages
 
 
-@app.after_request
-def post_after_request(response: flask.Response):
-    response.headers["Authorization"] = f"Bearer {session.get('token')}"
-    print(response.headers["Authorization"])
-    return response
+class MessageMixing(views.MethodView):
+
+    @property
+    def name_error(self):
+        """- ошибка имени пользователя"""
+        return {"name": "error", "message": "Пользователя не зарегистрирован",}
+
+    @property
+    def password_error(self):
+        """- ошибка пароля"""
+        return {"password": "error", "message": "Неверный пароль",}
+
+    @property
+    def new_message(self):
+        """- новое сообщение сохраннено"""
+        return {"success": True, "message": "Ваше сообщение сохранено",}
+
+    def all_message(self, lst: List, user_name):
+        """- новое сообщение сохраннено"""
+        return {"success": True, "user": user_name, "messages": lst,}
 
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        response: Dict = request.get_json()
+class Index(MessageMixing):
+    """- главная страница, авторизация пользователя"""
 
-        user = models.Users.find_by_username(response.get("name"))
+    def get(self):
+        ...
+
+    def post(self):
+        """- POST запрос"""
+
+        # получить данные из POST запроса
+        data: Dict = request.get_json()
+        # получить объект Юзера
+        user: Users = Users.find_by_username(data.get("name"))
+        # конвертируем пароль в строку, если он был введен как число
+        str_pass: str = self.convert_to_str(data.get("password"))
 
         if not user:
-            return jsonify(
-                {
-                    "name": "error",
-                    "message": "Пользователя не зарегистрирован",
-                }
-            )
+            return jsonify(self.name_error)
 
-        if not user.is_pass(response.get("password")):
-            return jsonify(
-                {
-                    "password": "error",
-                    "message": "Неверный пароль",
-                }
-            )
+        if not user.is_password(str_pass):
+            return jsonify(self.password_error)
 
-        token = create_token(user.name)
+        return jsonify({"token": self.create_token(user.name)})
 
-        session["token"] = token
+    @staticmethod
+    def convert_to_str(value: Any) -> str:
+        """- проверка на строковый тип, если тип другой конвертировать в сторковый"""
+        if not isinstance(value, str):
+            return str(value)
+        return value
 
-        # request_started.connect(log_request, app)
-
-        return jsonify({"token": token})
+    @staticmethod
+    def create_token(name: str) -> str:
+        """- создать токен"""
+        return create_access_token(identity={"name": name})
 
 
-def create_token(name: str) -> str:
-    """- создать токен"""
-    return create_access_token(identity={"name": name})
+class Author(MessageMixing):
+    """- сохранить новые сообщения автора"""
+
+    decorators = [jwt_required()]
+
+    def get(self):
+        ...
+
+    def post(self):
+        """- POST запрос"""
+
+        # получить данные из POST запроса
+        data: Dict = request.get_json()
+        # получить декодированные данные токена
+        auth: Dict = get_jwt_identity()
+
+        # провера авторизованного пользователя
+        if data.get("name") != auth.get("name"):
+            return jsonify(self.name_error)
+
+        # получить данные указанного пользователя
+        user: Users = Users.find_by_username(data.get("name"))
+
+        # сохранить сообщение пользователя
+        message: Messages = Messages(user_id=user.id, message=data.get("message"))
+        message.save()
+
+        return jsonify(self.new_message)
 
 
-@app.route("/user", methods=["GET", "POST"])
-@jwt_required()
-def user():
-    if request.method == "POST":
-        user = get_jwt_identity()
-        response: Dict = request.get_json()
+class History(MessageMixing):
+    """- получить сообщение автора, по количеству"""
 
-        # user = models.Users.find_by_username(response.get("name"))
-        #
-        # if not user:
-        #     return jsonify(
-        #         {
-        #             "name": "error",
-        #             "message": "Пользователя не зарегистрирован",
-        #         }
-        #     )
-        #
-        # if not user.is_pass(response.get("password")):
-        #     return jsonify(
-        #         {
-        #             "password": "error",
-        #             "message": "Неверный пароль",
-        #         }
-        #     )
-        #
-        # token = create_token(user.name)
-        #
-        # session["token"] = token
+    decorators = [jwt_required()]
 
-        # request_started.connect(log_request, app)
+    def get(self):
+        ...
 
-        return jsonify({"user": user})
+    def post(self):
+        """- POST запрос"""
+
+        # получить данные из POST запроса
+        data: Dict = request.get_json()
+        # получить декодированные данные токена
+        auth: Dict = get_jwt_identity()
+
+        # провера авторизованного пользователя
+        if data.get("name") != auth.get("name"):
+            return jsonify(self.name_error)
+
+        # получить данные указанного пользователя
+        user: Users = Users.find_by_username(data.get("name"))
+
+        # получить лимин в числовом типе
+        limit_mess: int = self.convert_to_int(data.get("history"))
+
+        # получить список с собщениями пользователя
+        messages: List[str] = self.get_messages(user, limit_mess)
+
+        return jsonify(self.all_message(messages, auth.get("name")))
+
+    @staticmethod
+    def convert_to_int(value: Any) -> int:
+        """- проверка на числовые тип, если тип другой конвертировать в числовой"""
+        if not isinstance(value, int):
+            return int(value)
+        return value
 
 
-#
-#
-#
-# class Index(views.MethodView):
-#     """- главная страница"""
-#
-#     def get(self):
-#         # # return make_response(jsonify(counter), 200)
-#         # # return jsonify(access_token=counter)
-#         # response = make_response(jsonify(counter))
-#         # response.headers["Authorization"] = f"Bearer {access_token}"
-#         # return response
-#         ...
-#
-#     def post(self):
-#         response: Dict = request.get_json()
-#
-#         user = models.Users.find_by_username(response.get("name"))
-#
-#         if not user:
-#             return jsonify(
-#                 {
-#                     "name": "error",
-#                     "message": "Пользователя не зарегистрирован",
-#                 }
-#             )
-#
-#         if not user.is_pass(response.get("password")):
-#             return jsonify(
-#                 {
-#                     "password": "error",
-#                     "message": "Неверный пароль",
-#                 }
-#             )
-#
-#         token = self.create_token(user.name)
-#
-#         session["token"] = token
-#
-#         # request_started.connect(log_request, app)
-#
-#         return jsonify({"token": token})
-#
-#     @staticmethod
-#     def create_token(name: str) -> str:
-#         """- создать токен"""
-#         return create_access_token(identity={"name": name})
-#
-#
-# class User(views.MethodView):
-#     """- пользователь"""
-#
-#     # decorators = []
-#     # @jwt_required()
-#     def get(self):
-#
-#         # user = get_jwt_identity()
-#
-#         counter = {
-#             "user": 'user',
-#             'access_token': session.get("Authorization"),
-#         }
-#
-#         response = make_response(jsonify(counter))
-#         response.headers["Authorization"] = session.get("Authorization")
-#         return response
-#
-#
-#     def post(self):
-#         response: Dict = request.get_json()
-#
-#         print(response)
-#         print(session.get("Authorization"))
-#
-#
-# class Message(views.MethodView):
-#     """- сообщения"""
-#
-#     decorators = [jwt_required()]
-#
-#     def get(self):
-#         ...
-#
-#     def post(self):
-#         ...
+    def get_messages(self, obj: Users, limit: int) -> List[str]:
+        """- получить сообщение пользователя по указанному лимиту,
+         если указанный лимит выше всех сообщений в базе, то вернуть все что есть"""
+        lst = [m.message for m in obj.messages]
+        if limit > len(lst):
+            return lst
+        return lst[:limit]

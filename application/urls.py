@@ -3,7 +3,7 @@ from flask import Flask
 from . import views
 
 
-def register_urls(app: Flask):
+def init_urls(app: Flask):
     """- регистрируем наши urls, адреса"""
 
     # главная страница
@@ -13,10 +13,16 @@ def register_urls(app: Flask):
         view_func=views.Index.as_view("index"),
     )
 
-    # страница с игрой
+    # новые сообщения
     app.add_url_rule(
-        rule='/user',
-        endpoint="user",
-        view_func=views.User.as_view("user"),
+        rule='/message',
+        endpoint="message",
+        view_func=views.Author.as_view("message"),
     )
 
+    # получить сообщения из базы
+    app.add_url_rule(
+        rule='/history',
+        endpoint="history",
+        view_func=views.History.as_view("history"),
+    )
