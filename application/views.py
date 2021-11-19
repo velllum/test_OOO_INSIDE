@@ -1,84 +1,177 @@
+from typing import Dict
+
 import flask
 from flask import (
     current_app as app,
     request,
     url_for,
-    views, make_response, jsonify, session,
+    views, make_response, jsonify, session, request_started,
 )
-from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, JWTManager, get_jwt_identity
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 
 from . import models
 
 
-jwt = JWTManager()
+@app.after_request
+def post_after_request(response: flask.Response):
+    response.headers["Authorization"] = f"Bearer {session.get('token')}"
+    print(response.headers["Authorization"])
+    return response
 
 
-class Index(views.MethodView):
-    """- главная страница"""
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        response: Dict = request.get_json()
 
-    # decorators = [jwt_required()]
+        user = models.Users.find_by_username(response.get("name"))
 
-    def get(self):
+        if not user:
+            return jsonify(
+                {
+                    "name": "error",
+                    "message": "Пользователя не зарегистрирован",
+                }
+            )
 
-        # user = get_jwt_identity()
+        if not user.is_pass(response.get("password")):
+            return jsonify(
+                {
+                    "password": "error",
+                    "message": "Неверный пароль",
+                }
+            )
 
-        query: models.Users = models.db.session.query(models.Users).get(1)
+        token = create_token(user.name)
 
-        print(query.name)
+        session["token"] = token
 
-        access_token = create_access_token(identity=query.name)
+        # request_started.connect(log_request, app)
+
+        return jsonify({"token": token})
 
 
-        counter = {
-            "massage": [mess.message for mess in query.messages],
-            'access_token': access_token,
-        }
+def create_token(name: str) -> str:
+    """- создать токен"""
+    return create_access_token(identity={"name": name})
 
-        session["Authorization"] = f"Bearer {access_token}"
 
-        print(session.get("Authorization"))
-
-        # return make_response(jsonify(counter), 200)
-        # return jsonify(access_token=counter)
-        response = make_response(jsonify(counter))
-        response.headers["Authorization"] = f"Bearer {access_token}"
-        return response
-
-    def post(self):
-        response = request.get_json()
-        print(response)
-        response = make_response(jsonify(response), 200)
-        return response
-
-class User(views.MethodView):
-    """- пользователь"""
-
-    decorators = [jwt_required()]
-
-    def get(self):
+@app.route("/user", methods=["GET", "POST"])
+@jwt_required()
+def user():
+    if request.method == "POST":
         user = get_jwt_identity()
+        response: Dict = request.get_json()
 
-        counter = {
-            "user": 'user',
-            'access_token': session.get("Authorization"),
-        }
+        # user = models.Users.find_by_username(response.get("name"))
+        #
+        # if not user:
+        #     return jsonify(
+        #         {
+        #             "name": "error",
+        #             "message": "Пользователя не зарегистрирован",
+        #         }
+        #     )
+        #
+        # if not user.is_pass(response.get("password")):
+        #     return jsonify(
+        #         {
+        #             "password": "error",
+        #             "message": "Неверный пароль",
+        #         }
+        #     )
+        #
+        # token = create_token(user.name)
+        #
+        # session["token"] = token
 
-        response = make_response(jsonify(counter))
-        response.headers["Authorization"] = session.get("Authorization")
-        return response
+        # request_started.connect(log_request, app)
+
+        return jsonify({"user": user})
 
 
-    def post(self):
-        ...
-
-
-class Message(views.MethodView):
-    """- сообщения"""
-
-    decorators = [jwt_required()]
-
-    def get(self):
-        ...
-
-    def post(self):
-        ...
+#
+#
+#
+# class Index(views.MethodView):
+#     """- главная страница"""
+#
+#     def get(self):
+#         # # return make_response(jsonify(counter), 200)
+#         # # return jsonify(access_token=counter)
+#         # response = make_response(jsonify(counter))
+#         # response.headers["Authorization"] = f"Bearer {access_token}"
+#         # return response
+#         ...
+#
+#     def post(self):
+#         response: Dict = request.get_json()
+#
+#         user = models.Users.find_by_username(response.get("name"))
+#
+#         if not user:
+#             return jsonify(
+#                 {
+#                     "name": "error",
+#                     "message": "Пользователя не зарегистрирован",
+#                 }
+#             )
+#
+#         if not user.is_pass(response.get("password")):
+#             return jsonify(
+#                 {
+#                     "password": "error",
+#                     "message": "Неверный пароль",
+#                 }
+#             )
+#
+#         token = self.create_token(user.name)
+#
+#         session["token"] = token
+#
+#         # request_started.connect(log_request, app)
+#
+#         return jsonify({"token": token})
+#
+#     @staticmethod
+#     def create_token(name: str) -> str:
+#         """- создать токен"""
+#         return create_access_token(identity={"name": name})
+#
+#
+# class User(views.MethodView):
+#     """- пользователь"""
+#
+#     # decorators = []
+#     # @jwt_required()
+#     def get(self):
+#
+#         # user = get_jwt_identity()
+#
+#         counter = {
+#             "user": 'user',
+#             'access_token': session.get("Authorization"),
+#         }
+#
+#         response = make_response(jsonify(counter))
+#         response.headers["Authorization"] = session.get("Authorization")
+#         return response
+#
+#
+#     def post(self):
+#         response: Dict = request.get_json()
+#
+#         print(response)
+#         print(session.get("Authorization"))
+#
+#
+# class Message(views.MethodView):
+#     """- сообщения"""
+#
+#     decorators = [jwt_required()]
+#
+#     def get(self):
+#         ...
+#
+#     def post(self):
+#         ...

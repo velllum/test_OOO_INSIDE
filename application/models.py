@@ -1,3 +1,6 @@
+from typing import Any
+
+from flask import request_started
 from flask_jwt_extended import create_access_token
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Integer, ForeignKey
@@ -31,22 +34,30 @@ class Users(Base):
 
     def __init__(self, name, password):
         self.name = name
-        self.password = self.create_pass(str(password))
+        self.password = self.create_pass(password)
 
-    @staticmethod
-    def create_pass(password: str) -> str:
+    @classmethod
+    def convert_to_str(cls, password: str) -> str:
+        """- проверка на строковый тип"""
+        if not isinstance(password, str):
+            password = str(password)
+        return password
+
+    @classmethod
+    def create_pass(cls, password: str) -> str:
         """- создать пароль"""
-        return generate_password_hash(password)
+        pd = cls.convert_to_str(password)
+        return generate_password_hash(pd)
 
-    def is_pass(self, password: str) -> bool:
+    def is_pass(self, password: Any) -> bool:
         """- проверка пароля на совпадение"""
-        return check_password_hash(self.password, password)
+        pd = Users.convert_to_str(password)
+        return check_password_hash(str(self.password), pd)
 
     @classmethod
     def find_by_username(cls, user_name: str) -> str:
         """- найти пользователя по имени"""
         return cls.query.filter_by(name=user_name).first()
-
 
     # def get_token(self, expire_time=24):
     #     expire_delta = timedelta(expire_time)
@@ -61,8 +72,6 @@ class Users(Base):
     #     if not bcrypt.verify(password, user.password):
     #         raise Exception('No user with this password')
     #     return user
-
-
 
 class Messages(Base):
     """- авторы"""
