@@ -6,7 +6,7 @@
 
 Выберите папку для клонирования и введите команду 
 
-`git clonev git@github.com:velllum/test_OOO_INSIDE.git -b dev`
+`git clone git@github.com:velllum/test_OOO_INSIDE.git -b dev`
 
 Подгрузить данные для работы через `docker-compose`, командой в терминале `docker-compose up -d`.
 После загрузки всех зависимостей запустить приложение в `docker`, можно командой `docker-compose up`.
