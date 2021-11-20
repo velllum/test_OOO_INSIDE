@@ -9,5 +9,3 @@ services:
       - "5000:5000"
     volumes:
       - .:/code
-    environment:
-      - SRVC_CONFIG=etc/local.json

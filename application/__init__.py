@@ -6,7 +6,7 @@ from . import fakes
 
 
 def create_app(path: str) -> Flask:
-    """- фабрику, инициализируем приложение"""
+    """- инициализируем приложения"""
     app = Flask(__name__)
     jwt = JWTManager()
     register_config(app, path)
