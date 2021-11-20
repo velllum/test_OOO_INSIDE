@@ -5,7 +5,6 @@ from . import models
 from . import fakes
 
 
-
 def create_app(path: str) -> Flask:
     """- фабрику, инициализируем приложение"""
     app = Flask(__name__)
@@ -14,11 +13,10 @@ def create_app(path: str) -> Flask:
 
     # запускаем контекст объекта
     with app.app_context():
+        from . import views
         jwt.init_app(app)
         register_db(app)
         register_urls(app)
-
-        from . import views
 
         return app
 
@@ -38,7 +36,9 @@ def register_db(app: Flask):
     # если нет то создаем и наполняем временными данными
     fakes.database_is_empty()
 
+
 def register_urls(app: Flask):
     """- регистрация url маршрутов"""
+    print(" * Инициализация URL")
     from . import urls
     urls.init_urls(app)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
@@ -23,6 +25,13 @@ class Base(db.Model):
         """- найти пользователя по имени"""
         return cls.query.filter_by(name=user_name).first()
 
+    @staticmethod
+    def convert_to_str(value: Any) -> str:
+        """- проверка на строковый тип, если тип другой конвертировать в строковый"""
+        if not isinstance(value, str):
+            return str(value)
+        return value
+
 
 class Users(Base):
     """- пользователи"""
@@ -37,14 +46,15 @@ class Users(Base):
         self.name = name
         self.password = self.create_pass(password)
 
-    @classmethod
-    def create_pass(cls, password: str) -> str:
+    def create_pass(self, password: str) -> str:
         """- создать пароль"""
-        return generate_password_hash(password)
+        pw = self.convert_to_str(password)
+        return generate_password_hash(pw)
 
     def is_password(self, password: str) -> bool:
         """- проверка пароля на совпадение"""
-        return check_password_hash(str(self.password), password)
+        pw = self.convert_to_str(password)
+        return check_password_hash(str(self.password), pw)
 
 
 class Messages(Base):
