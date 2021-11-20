@@ -1,6 +1,5 @@
 import pytest
 from flask import jsonify
-from flask_jwt_extended import JWTManager
 
 import app
 import application
@@ -10,13 +9,7 @@ from .utils import get_jwt_manager
 @pytest.fixture(scope='module')
 def client():
     """- создаем контекст приложения"""
-
-    flask_app = application.create_app(app.path)
-
-    JWTManager(flask_app)
-
-    with flask_app.app_context():
-        return flask_app
+    return application.create_app(app.path)
 
 
 def test_no_token(client):

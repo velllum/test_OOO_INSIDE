@@ -8,17 +8,24 @@ from . import fakes
 def create_app(path: str) -> Flask:
     """- инициализируем приложения"""
     app = Flask(__name__)
-    jwt = JWTManager()
     register_config(app, path)
 
     # запускаем контекст объекта
     with app.app_context():
-        from . import views
-        jwt.init_app(app)
+        register_jwt(app)
         register_db(app)
         register_urls(app)
 
+        from . import views
+
         return app
+
+
+def register_jwt(app: Flask):
+    """- регистрируем jwt модуль"""
+    print(" * Инициализация JWT")
+    jwt = JWTManager()
+    jwt.init_app(app)
 
 
 def register_config(app: Flask, path: str):
