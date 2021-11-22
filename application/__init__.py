@@ -1,22 +1,32 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager
 
 from . import models
-from . import urls
-from . import views
+from . import fakes
 
 
 def create_app(path: str) -> Flask:
-    """- создать фабрику flask"""
+    """- инициализируем приложения"""
     app = Flask(__name__)
     register_config(app, path)
 
+    # запускаем контекст объекта
     with app.app_context():
-        # запускаем контекст объекта,
-        register_data_base(app)
-        register_api(app)
+        register_jwt(app)
+        register_db(app)
+        register_urls(app)
+
+        from . import views
 
         return app
+
+
+def register_jwt(app: Flask):
+    """- регистрируем jwt модуль"""
+    print(" * Инициализация JWT")
+    jwt = JWTManager()
+    jwt.init_app(app)
+
 
 def register_config(app: Flask, path: str):
     """- регистрируем конфигурационные данные"""
@@ -24,16 +34,18 @@ def register_config(app: Flask, path: str):
     app.config.from_pyfile(path)
 
 
-def register_api(app: Flask):
-    """- регистрация модуля работы с api"""
-    print(" * инициализация Api")
-    urls.register_urls(views.api)
-    views.api.init_app(app)
-
-
-def register_data_base(app: Flask):
-    """- регитрация базы данных"""
-    print(" * Инициализация базы")
+def register_db(app: Flask):
+    """- регистрация базы данных"""
+    print(" * Инициализация базы данных")
     models.db.init_app(app)
-    with app.test_request_context():
-        models.db.create_all()
+
+    # проверяем была ли создана база данных,
+    # если нет то создаем и наполняем временными данными
+    fakes.database_is_empty()
+
+
+def register_urls(app: Flask):
+    """- регистрация url маршрутов"""
+    print(" * Инициализация URL")
+    from . import urls
+    urls.init_urls(app)
