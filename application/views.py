@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 
-from flask import request, views, jsonify, make_response
+from flask import request, views, jsonify
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 
 from .models import Users, Messages
@@ -49,12 +49,6 @@ class BaseView(views.MethodView):
             return lst
         return lst[:limit]
 
-    # @staticmethod
-    # def convert_to_str(value: Any) -> str:
-    #     """- проверка на строковый тип, если тип другой конвертировать в строковый"""
-    #     if not isinstance(value, str):
-    #         return str(value)
-    #     return value
 
     @staticmethod
     def create_token(name: str) -> str:
